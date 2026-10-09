@@ -1,0 +1,194 @@
+# =========================
+
+# Python
+
+# =========================
+
+**pycache**/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# =========================
+
+# Virtual Environments
+
+# =========================
+
+venv/
+.venv/
+env/
+ENV/
+
+# =========================
+
+# Environment Variables / Secrets
+
+# =========================
+
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# =========================
+
+# IDEs and Editors
+
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+
+# Testing and Coverage
+
+# =========================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+test-results/
+coverage.xml
+
+# =========================
+
+# Type Checking and Linting
+
+# =========================
+
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.dmypy.json
+.pyre/
+
+# =========================
+
+# Logs
+
+# =========================
+
+*.log
+logs/
+
+# =========================
+
+# Databases and Local Data
+
+# =========================
+
+*.sqlite
+*.sqlite3
+*.db
+
+# =========================
+
+# Jupyter
+
+# =========================
+
+.ipynb_checkpoints/
+
+# =========================
+
+# OS Files
+
+# =========================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+
+# Temporary Files
+
+# =========================
+
+*.tmp
+*.bak
+*.orig
+.cache/
+
+# =========================
+
+# FastAPI / ASGI
+
+# =========================
+
+uvicorn.log
+
+# =========================
+
+# Local Uploads and Generated Files
+
+# =========================
+
+uploads/
+media/
+static/generated/
+
+# =========================
+
+# Optional: Build / Tool Outputs
+
+# =========================
+
+site/
+
+
+# =========================
+
+# Frontend - Next.js
+
+# =========================
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Environment variables
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+!frontend/.env.sample
+
+# Next.js / TypeScript generated files
+
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+
+# Testing
+
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# Deployment
+
+frontend/.vercel/
+
+# Logs
+
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/pnpm-debug.log*
+frontend/*.log
