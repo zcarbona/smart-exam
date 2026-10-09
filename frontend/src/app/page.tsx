@@ -8,12 +8,14 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
+    // Wait until the server has confirmed the identity. Routing before that
+    // would decide based on a cached, attacker-controllable value.
+    if (loading) return;
+
+    if (!user) {
+      router.replace('/login');
+    } else {
+      router.replace('/dashboard');
     }
   }, [user, loading, router]);
 

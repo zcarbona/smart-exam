@@ -5,8 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ShieldCheck, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('Admin@12345678');
+  // Fields start empty. No credentials are bundled into the client at all —
+  // anyone able to read the JavaScript bundle would be able to read them.
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,7 +24,7 @@ export default function LoginPage() {
       await login(username, password);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Invalid username or password');
+      setError(err?.message || 'Invalid username or password');
     } finally {
       setSubmitting(false);
     }
@@ -50,16 +52,17 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Proctor Username</label>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Username</label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
               <input
                 type="text"
                 required
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                placeholder="admin"
+                placeholder="your username"
               />
             </div>
           </div>
@@ -71,6 +74,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"

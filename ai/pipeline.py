@@ -12,6 +12,15 @@ import time
 import cv2
 import numpy as np
 
+# Load a local .env when running outside Docker. Guarded so a missing
+# python-dotenv never prevents the pipeline from starting.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from ai.camera_capture import CameraCapture, list_available_cameras
 from ai.face_detector import FaceDetector, HeadPoseEstimator
 from ai.eye_gaze import EyeGazeEstimator
@@ -26,6 +35,10 @@ BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 BRIGHTNESS_ALPHA = 1.3
 BRIGHTNESS_BETA = 20
 DISPLAY_GUI = os.environ.get("DISPLAY_GUI", "true").lower() == "true"
+# Device codes of the cameras this pipeline drives, as registered by the admin.
+# An empty list falls back to reporting the device itself, which keeps a
+# single-camera setup working without any extra configuration.
+CAMERA_CODES = [c.strip() for c in os.environ.get("CAMERA_CODES", "").split(",") if c.strip()]
 
 class CentroidTracker:
     def __init__(self, max_disappeared: int = 30):
@@ -282,6 +295,13 @@ def run_pipeline(display_gui: bool = DISPLAY_GUI):
 
             # Send periodic telemetry heartbeat to backend
             event_gen.sync_status(live_student_count=live_count, fps=current_fps, tracks=track_sync_list)
+            # Report device + camera liveness; this is the only thing that marks a
+            # camera online on the dashboard. Cameras are identified by the codes
+            # an admin registered, not by how many students are currently visible.
+            event_gen.send_heartbeat(
+                camera_codes=CAMERA_CODES,
+                detail=f"Room feed active | {live_count} students",
+            )
 
             if display_gui:
                 display = frame.copy()

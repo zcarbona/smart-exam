@@ -1,5 +1,10 @@
 version: "3.8"
 
+# Shared settings live in the root `.env` and are referenced here so
+# Docker and bare-metal runs behave identically. Values that differ
+# inside a container (the DB path, the evidence mount, the AI
+# service's internal backend hostname) stay literal below.
+
 services:
   backend:
     build:
@@ -9,11 +14,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SECRET_KEY=smart-exam-super-secret-key-graduation-project-2026
-      - ACCESS_TOKEN_EXPIRE_MINUTES=15
-      - REFRESH_TOKEN_EXPIRE_HOURS=2
+      # Container-internal paths — not overridable from .env.
       - DATABASE_URL=sqlite+aiosqlite:////app/smart_exam.db
       - EVIDENCE_DIR=/app/evidence
+      # Pulled from .env, with development fallbacks.
+      - SECRET_KEY=${SECRET_KEY:-smart-exam-super-secret-key-graduation-project-2026}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - REFRESH_TOKEN_EXPIRE_HOURS=${REFRESH_TOKEN_EXPIRE_HOURS:-2}
+      # Transition-only mock admin. Override in any real deployment.
+      - BOOTSTRAP_ADMIN_USERNAME=${BOOTSTRAP_ADMIN_USERNAME:-admin}
+      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:-Admin@12345678}
+      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-admin@smartexam.edu}
+      # Device credentials for the AI pipeline's event ingestion.
+      # Must satisfy the backend password-strength policy.
+      - ROBOT_DEVICE_CODE=${ROBOT_DEVICE_CODE:-ROBOT-01}
+      - ROBOT_DEVICE_KEY=${ROBOT_DEVICE_KEY:-Robot-Dev-Key-2026!}
+      - DEVICE_HEARTBEAT_TIMEOUT_SECONDS=${DEVICE_HEARTBEAT_TIMEOUT_SECONDS:-30}
     volumes:
       - ./evidence:/app/evidence
       - db_data:/app
@@ -32,8 +48,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/dashboard
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8000/ws/dashboard}
     depends_on:
       backend:
         condition: service_healthy
@@ -45,9 +61,14 @@ services:
       dockerfile: ai/Dockerfile
     container_name: smart_exam_ai
     environment:
+      # The AI service reaches the backend over Docker's internal DNS.
       - BACKEND_URL=http://backend:8000
-      - CAMERA_INDEX=0
-      - DISPLAY_GUI=false
+      - CAMERA_INDEX=${CAMERA_INDEX:-0}
+      - CAMERA_CODES=${CAMERA_CODES:-ROBOT-01-CAM0}
+      - DISPLAY_GUI=${DISPLAY_GUI:-false}
+      # Must match the backend's ROBOT_DEVICE_CODE / ROBOT_DEVICE_KEY.
+      - ROBOT_DEVICE_CODE=${ROBOT_DEVICE_CODE:-ROBOT-01}
+      - ROBOT_DEVICE_KEY=${ROBOT_DEVICE_KEY:-Robot-Dev-Key-2026!}
     depends_on:
       backend:
         condition: service_healthy

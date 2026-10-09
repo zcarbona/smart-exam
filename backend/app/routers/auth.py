@@ -13,14 +13,21 @@ from backend.app.core.security import (
     get_password_hash,
     create_access_token,
     create_refresh_token,
-    get_current_user,
     _check_rate_limit,
     _client_ip,
     MAX_LOGIN_ATTEMPTS,
     LOCK_MINUTES,
+    require_authenticated_user,
 )
 from backend.app.models.models import User
-from backend.app.schemas.schemas import Token, LoginRequest, RefreshRequest, UserOut
+from backend.app.routers.ws import manager
+from backend.app.schemas.schemas import (
+    LogoutResponse,
+    Token,
+    LoginRequest,
+    RefreshRequest,
+    UserOut,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -92,6 +99,12 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated. Contact an administrator.",
+        )
+
     # Reset failed attempts upon successful login
     if user.failed_login_attempts or user.locked_until:
         user.failed_login_attempts = 0
@@ -129,9 +142,23 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.id == user_id))).scalars().first()
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    if not user.is_active:
+        # Revoke the session immediately so a deactivated account cannot rotate
+        # its way back into a live access token.
+        user.refresh_token = None
+        user.refresh_token_expires = None
+        db.add(user)
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
     if (
-        not user
-        or not user.refresh_token
+        not user.refresh_token
         or not verify_password(payload.refresh_token, user.refresh_token)
         or (user.refresh_token_expires and user.refresh_token_expires < now)
     ):
@@ -152,5 +179,23 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     }
 
 @router.get("/me", response_model=UserOut)
-async def me(user: User = Depends(get_current_user)):
+async def me(user: User = Depends(require_authenticated_user)):
     return user
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout(
+    user: User = Depends(require_authenticated_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke the server-side refresh token and close any open dashboards.
+
+    The short-lived access token stays valid until it expires on its own; the
+    important half is that no *new* access token can be minted afterwards.
+    """
+    user.refresh_token = None
+    user.refresh_token_expires = None
+    db.add(user)
+    await db.commit()
+
+    await manager.drop_deactivated(user.id)
+    return LogoutResponse(ok=True)

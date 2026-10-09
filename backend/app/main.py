@@ -6,15 +6,15 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.core.config import EVIDENCE_DIR
 from backend.app.core.database import init_db
-from backend.app.routers import auth, events, exams, robot, ws
+from backend.app.routers import admin, auth, events, exams, robot, ws
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB tables
+    # Initialize DB tables and apply additive schema updates
     await init_db()
-    # Run seed to ensure default admin exists
-    from backend.seed import seed_default_admin
-    await seed_default_admin()
+    # Provision the bootstrap admin and the AI device credential
+    from backend.seed import seed_all
+    await seed_all()
     yield
 
 app = FastAPI(
@@ -35,6 +35,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(events.router)
 app.include_router(exams.router)
 app.include_router(robot.router)
